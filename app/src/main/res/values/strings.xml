@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">ARControlPanel</string>
+    <string name="choice_act_name">Доступные сопряженные устройства</string>
+</resources>

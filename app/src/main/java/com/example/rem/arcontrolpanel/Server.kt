@@ -9,7 +9,7 @@ import java.util.*
 
 class ServerThread : Thread() {
     var serverSock: BluetoothServerSocket? = null
-    var myname: String = "fileball"
+    var myname: String = "arcontrolpanel"
 
 
     override fun run() {

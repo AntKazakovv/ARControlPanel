@@ -31,19 +31,15 @@ class MainActivity : AppCompatActivity() {
     var currentDevice: BluetoothDevice? = null
     var serv: ServerThread? = null
     var client: ClientThread? = null
-    var statusButtons: ArrayList<Int>? = null
+
 
     var idToView = HashMap<Int,Button>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        listPairingDevices = findViewById(R.id.listView)
+        //listPairingDevices = findViewById(R.id.listView)
         mPairedDevices = bluetooth.getBondedDevices().toTypedArray() // -> BluetoothDevice
-        var i = 0
-        while(i < 13){
-            statusButtons!!.add(0)
-        }
         idToView = hashMapOf(6 to (findViewById<Button>(R.id.button8)),
                              7 to (findViewById<Button>(R.id.button11)),
                              10 to (findViewById<Button>(R.id.button10)),
@@ -73,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     @Subscribe(threadMode = ThreadMode.MAIN)
     fun onEvent(event: ByteArray) {
         var i = 1
+        //смотрим что пришло по BT и устанавливаем значния светодиодов кнопкам
         while(i<event.size) {
             if(event[i].toInt() == 1)
                 idToView[event[i-1].toInt()]!!.setBackgroundTintList(ColorStateList.valueOf(Color.GREEN))
@@ -133,7 +130,6 @@ class MainActivity : AppCompatActivity() {
     fun goToMenuPairedDiveces(view: View){
         val intent = Intent(this@MainActivity, ChoiceActivity::class.java)
         startActivityForResult(intent, 0)
-        EventBus.getDefault().post(12) //отправляем специальный байт перед работой, что бы получить начальные состояния всех светодиодов
     }
 
     override fun onResume() {
@@ -146,7 +142,6 @@ class MainActivity : AppCompatActivity() {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, 1)
         }
-
         serv = ServerThread()
         serv!!.start()
     }
@@ -160,6 +155,7 @@ class MainActivity : AppCompatActivity() {
                     currentDevice = mPairedDevices!![currIndex]
                     client = ClientThread(currentDevice!!)
                     client!!.start()
+                    EventBus.getDefault().post(12) //отправляем специальный байт перед работой, что бы получить начальные состояния всех светодиодов
                 }
                 else{
                     println("ERROR: data is null -> (onActivityResult)")

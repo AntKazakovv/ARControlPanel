@@ -16,7 +16,7 @@ class ServerThread : Thread() {
         var socket: BluetoothSocket
         var tmp: BluetoothServerSocket? = null
         try {
-            tmp = bluetooth.listenUsingRfcommWithServiceRecord(myname, uuid)
+            tmp = model.bluetooth.listenUsingRfcommWithServiceRecord(myname, model.uuid)
         } catch (e: IOException) {
             Log.e("Server( get socket ): ", e.getLocalizedMessage())
         }

@@ -39,10 +39,6 @@ class ClientThread(var dev: BluetoothDevice): Thread(){
             }
             catch(e: IOException){ Log.e("Client( close socket ):", e.getLocalizedMessage()) }
         }
-
-
-
-
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)

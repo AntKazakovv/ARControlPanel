@@ -13,10 +13,10 @@ import android.widget.ListView
 
 class ChoiceActivity : AppCompatActivity() {
 
-    var mPairedDevices : Array<BluetoothDevice>? = null
-    var listPairingDevices: ListView? = null
+    var mPairedDevices = arrayListOf<BluetoothDevice>()
+    lateinit var listPairingDevices: ListView
     var deviceArray: ArrayAdapter<String>? = null
-    var currElemArray: BluetoothDevice? = null
+    //var currElemArray: BluetoothDevice? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,7 +27,7 @@ class ChoiceActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         //получаем список сопряженных устройств
-        mPairedDevices = bluetooth.getBondedDevices().toTypedArray() // -> BluetoothDevice
+        mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevice
         deviceArray = ArrayAdapter<String>(this,  android.R.layout.simple_list_item_1)
 
         var intent2 = Intent()
@@ -35,10 +35,10 @@ class ChoiceActivity : AppCompatActivity() {
         for( i in mPairedDevices!!){
             deviceArray!!.add("${i.getName()} | ${i.getAddress()}")
         }
-        listPairingDevices!!.setAdapter(deviceArray)
+        listPairingDevices.setAdapter(deviceArray)
 
         //--------------------------------------------
-        listPairingDevices!!.setOnItemClickListener{parent, v , position, id ->
+        listPairingDevices.setOnItemClickListener{parent, v , position, id ->
             //currElemArray = mPairedDevices!![position]
             intent2.putExtra("indexdevice", position)
             setResult(Activity.RESULT_OK, intent2)

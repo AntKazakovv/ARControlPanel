@@ -15,40 +15,64 @@ import android.widget.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
+import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-var bluetooth = BluetoothAdapter.getDefaultAdapter()
-var uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+//var bluetooth = BluetoothAdapter.getDefaultAdapter()
+//var uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+val model = Model()
 
 class MainActivity : AppCompatActivity() {
 
     //global variables
-    var mPairedDevices : Array<BluetoothDevice>? = null
-    var listPairingDevices: ListView? = null
     var currIndex = 0
-    var currentDevice: BluetoothDevice? = null
-    var serv: ServerThread? = null
-    var client: ClientThread? = null
+    var serv = ServerThread()
+    lateinit var client: ClientThread
 
 
-    var idToView = HashMap<Int,Button>()
+
+    enum class ControlElements(var id: Int){
+        Stop(3),
+        Record(1),
+        Play(2),
+        Backward(12),
+        Forwards(13),
+        But1(6),
+        But2(7),
+        But3(10),
+        But4(11),
+        Left(4),
+        Right(5),
+        Plus(8),
+        Minus(9),
+        Triger(14)
+    }
+
+    //var idToView = HashMap<Int,Button>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         //listPairingDevices = findViewById(R.id.listView)
-        mPairedDevices = bluetooth.getBondedDevices().toTypedArray() // -> BluetoothDevice
-        idToView = hashMapOf(6 to (findViewById<Button>(R.id.button8)),
-                             7 to (findViewById<Button>(R.id.button11)),
-                             10 to (findViewById<Button>(R.id.button10)),
-                             11 to (findViewById<Button>(R.id.button12)),
-                             4 to (findViewById<Button>(R.id.button6)),
-                             5 to (findViewById<Button>(R.id.button7)),
-                             1 to (findViewById<Button>(R.id.button3)),
-                             2 to (findViewById<Button>(R.id.button)))
+        // <?>
+        model.mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevices
 
+        model.idToView = hashMapOf(ControlElements.But1.id   to   (findViewById<Button>(R.id.button8)),
+                             ControlElements.But2.id   to   (findViewById<Button>(R.id.button11)),
+                             ControlElements.But3.id   to   (findViewById<Button>(R.id.button10)),
+                             ControlElements.But4.id   to   (findViewById<Button>(R.id.button12)),
+                             ControlElements.Left.id   to   (findViewById<Button>(R.id.button6)),
+                             ControlElements.Right.id  to   (findViewById<Button>(R.id.button7)),
+                             ControlElements.Record.id to   (findViewById<Button>(R.id.button3)),
+                             ControlElements.Play.id   to   (findViewById<Button>(R.id.button)),
+                             ControlElements.Backward.id   to   (findViewById<Button>(R.id.button4)),
+                             ControlElements.Forwards.id   to   (findViewById<Button>(R.id.button5)),
+                             ControlElements.Stop.id   to   (findViewById<Button>(R.id.button2)),
+                             ControlElements.Plus.id   to   (findViewById<Button>(R.id.button9)),
+                             ControlElements.Minus.id   to   (findViewById<Button>(R.id.button13))
+        )
     }
 
     override fun onStart() {
@@ -58,12 +82,116 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        if(serv != null) {
-            serv!!.cancel()
-            client!!.cancel()
-        }
+
+        serv.cancel()
+        try{
+            client.cancel()
+        }catch( e: Exception){}
         EventBus.getDefault().unregister(this)
     }
+
+
+    //------------------- СОбытия для кнопок------------------------
+    fun backwardBut(view: View){
+        EventBus.getDefault().post(ControlElements.Backward)
+    }
+    fun forwardsBut(view: View){
+        EventBus.getDefault().post(ControlElements.Backward)
+    }
+    fun recBut(view: View){
+        EventBus.getDefault().post(ControlElements.Record)
+    }
+    fun playBut(view: View){
+        EventBus.getDefault().post(ControlElements.Play)
+    }
+    fun stopBut(view: View){
+        EventBus.getDefault().post( ControlElements.Stop)
+    }
+    fun leftBut(view: View){
+        EventBus.getDefault().post(ControlElements.Left)
+    }
+    fun rightBut(view: View){
+        EventBus.getDefault().post(ControlElements.Right)
+    }
+    fun oneNumBut(view: View){
+        EventBus.getDefault().post(ControlElements.But1)
+    }
+    fun twoNumBut(view: View){
+        EventBus.getDefault().post(ControlElements.But2)
+    }
+    fun plusBut(view: View){
+        EventBus.getDefault().post(ControlElements.Plus)
+    }
+    fun minusBut(view: View){
+        EventBus.getDefault().post(ControlElements.Minus)
+    }
+    fun threeNumBut(view: View){
+        EventBus.getDefault().post(ControlElements.But3)
+    }
+    fun fourNumBut(view: View){
+        EventBus.getDefault().post(ControlElements.But4)
+    }
+    //-------------------------------------------------------------
+
+    fun goToMenuPairedDiveces(view: View){
+        val intent = Intent(this@MainActivity, ChoiceActivity::class.java)
+        startActivityForResult(intent, 0)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        //Спрашиваем, врубил ли юзер блютуз
+        if(model.bluetooth.isEnabled()){
+        }
+        else {
+            //если нет, предлагаем врубить
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, 1)
+        }
+        serv.start()
+    }
+
+    // ловим и обрабатываем ответку от ChoiceActivity
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if(requestCode == 0){
+            if(resultCode == Activity.RESULT_OK){
+                if(data!= null){
+                    currIndex = data.getIntExtra("indexdevice", -1)
+                    model.currentDevice = model.mPairedDevices[currIndex]
+                    client = ClientThread(model.currentDevice!!)
+                    client.start()
+                    EventBus.getDefault().post(ControlElements.Triger.id) //отправляем специальный байт перед работой, что бы получить начальные состояния всех светодиодов
+                }
+                else{
+                    println("ERROR: data is null -> (onActivityResult)")
+                }
+            }
+            else{
+                println("RETURN_CANCELED -> (onActivityResult)")
+            }
+        }
+    }
+
+
+}
+
+class Model{
+    var bluetooth: BluetoothAdapter
+        get() {return bluetooth}
+        set(blue){}
+
+    var uuid: UUID
+        get(){return uuid}
+        set(uuid){}
+
+    var currentDevice: BluetoothDevice
+        get(){return currentDevice}
+        set(curDev){}
+
+    var mPairedDevices = arrayListOf<BluetoothDevice>()
+
+    var idToView = HashMap<Int,Button>()
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -80,92 +208,5 @@ class MainActivity : AppCompatActivity() {
             i+=1
         }
     }
-
-    //------------------- СОбытия для кнопок------------------------
-    fun recBut(view: View){
-        EventBus.getDefault().post(1)
-    }
-
-    fun playBut(view: View){
-        EventBus.getDefault().post(2)
-    }
-
-    fun stopBut(view: View){
-        EventBus.getDefault().post(3)
-    }
-
-    fun leftBut(view: View){
-        EventBus.getDefault().post(4)
-    }
-
-    fun rightBut(view: View){
-        EventBus.getDefault().post(5)
-    }
-
-    fun oneNumBut(view: View){
-        EventBus.getDefault().post(6)
-    }
-
-    fun twoNumBut(view: View){
-        EventBus.getDefault().post(7)
-    }
-
-    fun plusBut(view: View){
-        EventBus.getDefault().post(8)
-    }
-
-    fun minusBut(view: View){
-        EventBus.getDefault().post(9)
-    }
-
-    fun threeNumBut(view: View){
-        EventBus.getDefault().post(10)
-    }
-
-    fun fourNumBut(view: View){
-        EventBus.getDefault().post(11)
-    }
-    //-------------------------------------------------------------
-
-    fun goToMenuPairedDiveces(view: View){
-        val intent = Intent(this@MainActivity, ChoiceActivity::class.java)
-        startActivityForResult(intent, 0)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        //Спрашиваем, врубил ли юзер блютуз
-        if(bluetooth.isEnabled()){
-        }
-        else {
-            //если нет, предлагаем врубить
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(enableBtIntent, 1)
-        }
-        serv = ServerThread()
-        serv!!.start()
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode == 0){
-            if(resultCode == Activity.RESULT_OK){
-                if(data!= null){
-                    currIndex = data.getIntExtra("indexdevice", -1)
-                    currentDevice = mPairedDevices!![currIndex]
-                    client = ClientThread(currentDevice!!)
-                    client!!.start()
-                    EventBus.getDefault().post(12) //отправляем специальный байт перед работой, что бы получить начальные состояния всех светодиодов
-                }
-                else{
-                    println("ERROR: data is null -> (onActivityResult)")
-                }
-            }
-            else{
-                println("RETURN_CANCELED -> (onActivityResult)")
-            }
-        }
-    }
-
 
 }

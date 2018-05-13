@@ -18,11 +18,13 @@ class ClientThread(var dev: BluetoothDevice): Thread(){
     var data1: Int? = null
 
     override fun run(){
-        //регитрируем приемник
+        //реcгитрируем приемник
         EventBus.getDefault().register(this)
+
+
         var tmp: BluetoothSocket? = null
         try {
-            tmp = dev.createRfcommSocketToServiceRecord(uuid)
+            tmp = dev.createRfcommSocketToServiceRecord(model.uuid)
         } catch (e: IOException) {
             Log.e("Client(get socket):", e.getLocalizedMessage())
         }
@@ -38,18 +40,19 @@ class ClientThread(var dev: BluetoothDevice): Thread(){
             catch(e: IOException){ Log.e("Client( close socket ):", e.getLocalizedMessage()) }
         }
 
-        while(true) {
-            if(data1 != null){
-                // киаем сокет в  поток для передачи данных
-                var manageThread = ManageConnectCliThread(socket!!, data1!!)
-                manageThread.start()
-            }
-        }
+
+
+
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun onEvent(event: Int) {
-        data1 = event
+    fun onEvent(event: MainActivity.ControlElements) {
+        data1 = event.id
+        if(data1 != null){
+            // киаем сокет в  поток для передачи данных
+            var manageThread = ManageConnectCliThread(socket!!, data1!!)
+            manageThread.start()
+        }
     }
 
     fun cancel() {

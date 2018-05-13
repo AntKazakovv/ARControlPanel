@@ -66,6 +66,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="36dp"
         android:background="@drawable/butleft"
+        android:onClick="backwardBut"
         android:backgroundTint="@color/colorPrimary"
         app:layout_constraintEnd_toStartOf="@+id/button5"
         app:layout_constraintHorizontal_bias="0.392"
@@ -80,6 +81,7 @@
         android:layout_marginTop="36dp"
         android:background="@drawable/butright"
         android:backgroundTint="@color/colorPrimary"
+        android:onClick="forwardsBut"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/button"
         android:layout_marginRight="68dp" />

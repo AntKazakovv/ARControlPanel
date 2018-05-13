@@ -9,9 +9,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
-/**
- * Created by kant on 10.02.2018.
- */
+
 class ManageConnectCliThread(var sock: BluetoothSocket, var data: Int): Thread() {
     var mOutputStream: OutputStream? = null
     override fun run() {
@@ -21,12 +19,11 @@ class ManageConnectCliThread(var sock: BluetoothSocket, var data: Int): Thread()
                 Log.e("ManageConnectServ:", e.getLocalizedMessage())
             }
 
-        while(true) {
-            try {
-                mOutputStream!!.write(data)
-            } catch (e: IOException) {
-            }
-        }
+
+                try {
+                    mOutputStream!!.write(data)
+                } catch (e: IOException) {
+                }
 
     }
 }

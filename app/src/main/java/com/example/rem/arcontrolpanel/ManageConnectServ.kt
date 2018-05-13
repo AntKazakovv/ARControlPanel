@@ -8,7 +8,7 @@ import java.io.InputStream
 
 
 class ManageConnectServThread(var sock: BluetoothSocket): Thread() {
-    var mInputStream: InputStream? = null
+    lateinit var mInputStream: InputStream
 
     override fun run(){
         try{
@@ -18,16 +18,9 @@ class ManageConnectServThread(var sock: BluetoothSocket): Thread() {
         var buffer: ByteArray = ByteArray(1024)
         var bytes: Int
 
-        while(true){
-            try{
-                bytes = mInputStream!!.read(buffer)
-                EventBus.getDefault().post(buffer)
-                /*
-                if(mHandler != null){
-                    mHandler!!.obtainMessage(MESSAGE_READ, bytes,-1, buffer).sendToTarget()
-                }*/
+        bytes = mInputStream.read(buffer)
+        EventBus.getDefault().post(buffer)
 
-            }catch(e: IOException){ break }
-        }
+
     }
 }

@@ -13,7 +13,7 @@ import android.widget.ListView
 
 class ChoiceActivity : AppCompatActivity() {
 
-    var mPairedDevices = arrayListOf<BluetoothDevice>()
+
     lateinit var listPairingDevices: ListView
     var deviceArray: ArrayAdapter<String>? = null
     //var currElemArray: BluetoothDevice? = null
@@ -27,12 +27,12 @@ class ChoiceActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         //получаем список сопряженных устройств
-        mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevice
+        model.mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevice
         deviceArray = ArrayAdapter<String>(this,  android.R.layout.simple_list_item_1)
 
         var intent2 = Intent()
         // заполняем адаптер информацией об найденых устройствах
-        for( i in mPairedDevices!!){
+        for( i in model.mPairedDevices!!){
             deviceArray!!.add("${i.getName()} | ${i.getAddress()}")
         }
         listPairingDevices.setAdapter(deviceArray)

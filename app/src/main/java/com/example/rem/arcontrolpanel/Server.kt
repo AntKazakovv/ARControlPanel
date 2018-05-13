@@ -8,34 +8,33 @@ import java.util.*
 
 
 class ServerThread : Thread() {
-    var serverSock: BluetoothServerSocket? = null
+    lateinit var serverSock: BluetoothServerSocket
     var myname: String = "arcontrolpanel"
-
+    var error: Int = 0
 
     override fun run() {
-        var socket: BluetoothSocket
+        lateinit var socket: BluetoothSocket
         var tmp: BluetoothServerSocket? = null
         try {
             tmp = model.bluetooth.listenUsingRfcommWithServiceRecord(myname, model.uuid)
         } catch (e: IOException) {
             Log.e("Server( get socket ): ", e.getLocalizedMessage())
+            error = 1
         }
-        serverSock = tmp
+        if(error==0) {
+            serverSock = tmp!!
 
-        while (true) {
+
             try {
-                socket = serverSock!!.accept()
-            } catch (e: IOException) {
-                Log.e("Server( accept ):", e.getLocalizedMessage())
-                serverSock!!.close()
-                break
-            }
-
-            if (socket != null) {
+                socket = serverSock.accept()
                 // посылаем соккет в отдельный поток для обработки
                 var manageThread = ManageConnectServThread(socket)
                 manageThread.start()
+            } catch (e: IOException) {
+                Log.e("Server( accept ):", e.getLocalizedMessage())
+                serverSock.close()
             }
+
         }
     }
 

@@ -42,7 +42,7 @@ class ClientThread(var dev: BluetoothDevice): Thread(){
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
-    fun onEvent(event: MainActivity.ControlElements) {
+    public fun onEvent(event: MainActivity.ControlElements) {
         data1 = event.id
         if(data1 != null){
             // киаем сокет в  поток для передачи данных

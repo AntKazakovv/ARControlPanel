@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         //listPairingDevices = findViewById(R.id.listView)
         // <?>
-        model.mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevices
+        //model.mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevices
 
         model.idToView = hashMapOf(ControlElements.But1.id   to   (findViewById<Button>(R.id.button8)),
                              ControlElements.But2.id   to   (findViewById<Button>(R.id.button11)),
@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        EventBus.getDefault().register(this)
+        //EventBus.getDefault().register(this)
     }
 
     override fun onStop() {
@@ -87,7 +87,7 @@ class MainActivity : AppCompatActivity() {
         try{
             client.cancel()
         }catch( e: Exception){}
-        EventBus.getDefault().unregister(this)
+        //EventBus.getDefault().unregister(this)
     }
 
 
@@ -148,7 +148,9 @@ class MainActivity : AppCompatActivity() {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             startActivityForResult(enableBtIntent, 1)
         }
-        serv.start()
+        try {
+            serv.start()
+        }catch (e: Exception){}
     }
 
     // ловим и обрабатываем ответку от ChoiceActivity
@@ -177,17 +179,11 @@ class MainActivity : AppCompatActivity() {
 }
 
 class Model{
-    var bluetooth: BluetoothAdapter
-        get() {return bluetooth}
-        set(blue){}
+    var bluetooth = BluetoothAdapter.getDefaultAdapter()
 
-    var uuid: UUID
-        get(){return uuid}
-        set(uuid){}
+    var uuid: UUID  = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-    var currentDevice: BluetoothDevice
-        get(){return currentDevice}
-        set(curDev){}
+    lateinit var currentDevice: BluetoothDevice
 
     var mPairedDevices = arrayListOf<BluetoothDevice>()
 
@@ -195,7 +191,7 @@ class Model{
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onEvent(event: ByteArray) {
+    public fun onEvent(event: ByteArray) {
         var i = 1
         //смотрим что пришло по BT и устанавливаем значния светодиодов кнопкам
         while(i<event.size) {

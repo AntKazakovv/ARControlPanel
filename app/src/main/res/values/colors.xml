@@ -2,5 +2,8 @@
 <resources>
     <color name="colorPrimary">#3f51b5</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#ff4081</color>
+    <color name="colorAccent">#f25f5c</color>
+    <color name="backColor">#00b8d4</color>
+    <color name="connectMenu">#17b2b0</color>
+    <color name="buttons">#90a4ae</color>
 </resources>

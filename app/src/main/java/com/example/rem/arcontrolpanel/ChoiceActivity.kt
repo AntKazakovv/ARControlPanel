@@ -27,13 +27,15 @@ class ChoiceActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         //получаем список сопряженных устройств
-        model.mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevice
+        if(model.mPairedDevices.isEmpty()) {
+            model.mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevice
+        }
         deviceArray = ArrayAdapter<String>(this,  android.R.layout.simple_list_item_1)
 
         var intent2 = Intent()
         // заполняем адаптер информацией об найденых устройствах
         for( i in model.mPairedDevices!!){
-            deviceArray!!.add("${i.getName()} | ${i.getAddress()}")
+            deviceArray!!.add("${i.getName()}")
         }
         listPairingDevices.setAdapter(deviceArray)
 

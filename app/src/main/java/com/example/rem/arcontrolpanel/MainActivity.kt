@@ -19,6 +19,9 @@ import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import android.R.string.cancel
+import android.util.Log
+
 
 //var bluetooth = BluetoothAdapter.getDefaultAdapter()
 //var uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
@@ -28,7 +31,7 @@ class MainActivity : AppCompatActivity() {
 
     //global variables
     var currIndex = 0
-    var serv = ServerThread()
+    //var serv = ServerThread()
     lateinit var client: ClientThread
 
 
@@ -60,34 +63,52 @@ class MainActivity : AppCompatActivity() {
         //model.mPairedDevices.addAll(model.bluetooth.getBondedDevices().toTypedArray()) // -> BluetoothDevices
 
         model.idToView = hashMapOf(ControlElements.But1.id   to   (findViewById<Button>(R.id.button8)),
-                             ControlElements.But2.id   to   (findViewById<Button>(R.id.button11)),
-                             ControlElements.But3.id   to   (findViewById<Button>(R.id.button10)),
-                             ControlElements.But4.id   to   (findViewById<Button>(R.id.button12)),
-                             ControlElements.Left.id   to   (findViewById<Button>(R.id.button6)),
-                             ControlElements.Right.id  to   (findViewById<Button>(R.id.button7)),
-                             ControlElements.Record.id to   (findViewById<Button>(R.id.button3)),
-                             ControlElements.Play.id   to   (findViewById<Button>(R.id.button)),
-                             ControlElements.Backward.id   to   (findViewById<Button>(R.id.button4)),
-                             ControlElements.Forwards.id   to   (findViewById<Button>(R.id.button5)),
-                             ControlElements.Stop.id   to   (findViewById<Button>(R.id.button2)),
-                             ControlElements.Plus.id   to   (findViewById<Button>(R.id.button9)),
-                             ControlElements.Minus.id   to   (findViewById<Button>(R.id.button13))
+                                    ControlElements.But2.id   to   (findViewById<Button>(R.id.button11)),
+                                    ControlElements.But3.id   to   (findViewById<Button>(R.id.button10)),
+                                    ControlElements.But4.id   to   (findViewById<Button>(R.id.button12)),
+                                    ControlElements.Left.id   to   (findViewById<Button>(R.id.button6)),
+                                    ControlElements.Right.id  to   (findViewById<Button>(R.id.button7)),
+                                    ControlElements.Record.id to   (findViewById<Button>(R.id.button3)),
+                                    ControlElements.Play.id   to   (findViewById<Button>(R.id.button)),
+                                    ControlElements.Backward.id   to   (findViewById<Button>(R.id.button4)),
+                                    ControlElements.Forwards.id   to   (findViewById<Button>(R.id.button5)),
+                                    ControlElements.Stop.id   to   (findViewById<Button>(R.id.button2)),
+                                    ControlElements.Plus.id   to   (findViewById<Button>(R.id.button9)),
+                                    ControlElements.Minus.id   to   (findViewById<Button>(R.id.button13))
         )
     }
 
     override fun onStart() {
         super.onStart()
-        //EventBus.getDefault().register(this)
+
+        //Спрашиваем, врубил ли юзер блютуз
+        if(model.bluetooth.isEnabled()){
+        }
+        else {
+            //если нет, предлагаем врубить
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+            startActivityForResult(enableBtIntent, 1)
+        }
+
+
+        EventBus.getDefault().register(this)
     }
+
+//    override fun onDestroy() { // Закрытие приложения
+//        super.onDestroy()
+//        if (client != null) client.cancel()
+//    }
 
     override fun onStop() {
         super.onStop()
 
-        serv.cancel()
-        try{
-            client.cancel()
-        }catch( e: Exception){}
-        //EventBus.getDefault().unregister(this)
+        //serv.cancel()
+        if(client != null) {
+            try {
+                client.cancel()
+            } catch (e: Exception) { Log.e("Error closing Client ", e.getLocalizedMessage())}
+        }
+        EventBus.getDefault().unregister(this)
     }
 
 
@@ -140,39 +161,52 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        //Спрашиваем, врубил ли юзер блютуз
-        if(model.bluetooth.isEnabled()){
-        }
-        else {
-            //если нет, предлагаем врубить
-            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(enableBtIntent, 1)
-        }
-        try {
-            serv.start()
-        }catch (e: Exception){}
+
     }
 
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public fun onEvent(event: ByteArray) {
+        var i = 1
+        //смотрим что пришло по BT и устанавливаем значния светодиодов кнопкам
+        while(i<event.size) {
+            if(event[i].toInt() == 1)
+                model.idToView[event[i-1].toInt()]!!.setBackgroundTintList(ColorStateList.valueOf(Color.GREEN))
+            if(event[i].toInt() == 2)
+                model.idToView[event[i-1].toInt()]!!.setBackgroundTintList(ColorStateList.valueOf(Color.YELLOW))
+            if(event[i].toInt() == 3)
+                model.idToView[event[i-1].toInt()]!!.setBackgroundTintList(ColorStateList.valueOf(Color.RED))
+            i+=1
+        }
+    }
     // ловим и обрабатываем ответку от ChoiceActivity
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode == 0){
-            if(resultCode == Activity.RESULT_OK){
-                if(data!= null){
-                    currIndex = data.getIntExtra("indexdevice", -1)
-                    model.currentDevice = model.mPairedDevices[currIndex]
-                    client = ClientThread(model.currentDevice!!)
-                    client.start()
-                    EventBus.getDefault().post(ControlElements.Triger.id) //отправляем специальный байт перед работой, что бы получить начальные состояния всех светодиодов
+        when(requestCode){
+            0 -> if(resultCode == Activity.RESULT_OK){
+                    if(data!= null){
+                        currIndex = data.getIntExtra("indexdevice", -1)
+                        model.currentDevice = model.mPairedDevices[currIndex]
+                        model.mPairedDevices.removeAt(currIndex)
+                        client = ClientThread(model.currentDevice!!)
+                        client.start()
+                        //EventBus.getDefault().post(ControlElements.Triger.id) //отправляем специальный байт перед работой, что бы получить начальные состояния всех светодиодов
+                    }
+                    else{
+                        println("ERROR: data is null -> (onActivityResult)")
+                    }
                 }
                 else{
-                    println("ERROR: data is null -> (onActivityResult)")
+                    println("RETURN_CANCELED -> (onActivityResult)")
                 }
-            }
-            else{
-                println("RETURN_CANCELED -> (onActivityResult)")
-            }
+            1 -> if(resultCode == Activity.RESULT_OK){}
+                else{
+                    Toast.makeText(this, "BlueTooth не включён", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
         }
+
     }
 
 
@@ -189,20 +223,5 @@ class Model{
 
     var idToView = HashMap<Int,Button>()
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public fun onEvent(event: ByteArray) {
-        var i = 1
-        //смотрим что пришло по BT и устанавливаем значния светодиодов кнопкам
-        while(i<event.size) {
-            if(event[i].toInt() == 1)
-                idToView[event[i-1].toInt()]!!.setBackgroundTintList(ColorStateList.valueOf(Color.GREEN))
-            if(event[i].toInt() == 2)
-                idToView[event[i-1].toInt()]!!.setBackgroundTintList(ColorStateList.valueOf(Color.YELLOW))
-            if(event[i].toInt() == 3)
-                idToView[event[i-1].toInt()]!!.setBackgroundTintList(ColorStateList.valueOf(Color.RED))
-            i+=1
-        }
-    }
 
 }

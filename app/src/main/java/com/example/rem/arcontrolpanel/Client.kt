@@ -8,46 +8,59 @@ import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.io.IOException
+import java.io.OutputStream
+import android.widget.Toast
+//import android.support.test.internal.runner.junit4.statement.UiThreadStatement.runOnUiThread
+
+
 
 //var socket: BluetoothSocket? = null
 
 
-class ClientThread(var dev: BluetoothDevice): Thread(){
+class ClientThread : Thread{
     var socket: BluetoothSocket? = null
     //var blueDev: BluetoothDevice? = null
     var data1: Int? = null
+    var connectOK = false
+    var arrayThreads = mutableListOf<ThreadConnected>()
 
-    override fun run(){
+    constructor(dev: BluetoothDevice){
         //реcгитрируем приемник
         EventBus.getDefault().register(this)
-
-
-        var tmp: BluetoothSocket? = null
-        try {
-            tmp = dev.createRfcommSocketToServiceRecord(model.uuid)
-        } catch (e: IOException) {
-            Log.e("Client(get socket):", e.getLocalizedMessage())
-        }
-        socket = tmp
-
         try{
-            socket!!.connect()
+            socket = dev.createRfcommSocketToServiceRecord(model.uuid)
         }
-        catch(e: IOException){ Log.e("Client( connect ): ", e.getLocalizedMessage())
-            try{
+        catch (e: Exception){Log.e("Error open socket: ", e.getLocalizedMessage())}
+    }
+
+    override fun run() {
+
+        try {
+            socket!!.connect()
+            connectOK = true
+        } catch (e: IOException) {
+
+            Log.e("Client( connect ): ", e.getLocalizedMessage())
+            try {
                 socket!!.close()
+            } catch (e: IOException) {
+                Log.e("Client( close socket ):", e.getLocalizedMessage())
+                e.printStackTrace()
             }
-            catch(e: IOException){ Log.e("Client( close socket ):", e.getLocalizedMessage()) }
+        }
+
+        if(connectOK){
+            var thr = ThreadConnected(socket!!)
+            thr.start()
+            arrayThreads.add(thr)
         }
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public fun onEvent(event: MainActivity.ControlElements) {
-        data1 = event.id
-        if(data1 != null){
-            // киаем сокет в  поток для передачи данных
-            var manageThread = ManageConnectCliThread(socket!!, data1!!)
-            manageThread.start()
+        val data1 = event.id
+        for(thr in arrayThreads){
+            thr.write(data1)
         }
     }
 
